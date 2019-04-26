@@ -10,11 +10,11 @@ To Install:
 ```
 npm install -g nodemon
 npm install express --save
-sudo yum install mariadb-server
 ```
 
 To Install Database
 ```
+sudo yum install mariadb-server
 mysql -u root
 mysql> create database autoTweets
 mysql> source dump.sql
