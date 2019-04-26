@@ -1,4 +1,4 @@
-# Node Server
+# TwitMore Node Server
 
 To Install Node on a AWS Linux 2 AMI
 ```
