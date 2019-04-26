@@ -13,12 +13,12 @@ npm install express --save
 sudo yum install mariadb-server
 ```
 
-```
 To Install Database
 ```
 mysql -u root
 mysql> create database autoTweets
 mysql> source dump.sql
+```
 
 To Run
 
