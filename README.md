@@ -1,10 +1,11 @@
 # TwitMore Node Server
 
-To Install Node on a AWS Linux 2 AMI
+To Install NVM, Node on a AWS Linux 2 AMI
 ```
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.32.0/install.sh | bash
 . ~/.nvm/nvm.sh
 nvm install --lts
+nvm alias default 10.15.3
 ```
 To Install:
 ```
