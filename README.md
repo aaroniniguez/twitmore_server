@@ -26,6 +26,7 @@ To Install Database
 sudo yum install mariadb-server
 mysql -u root
 mysql> create database autoTweets
+mysql> use autoTweets
 mysql> source dump.sql
 ```
 
