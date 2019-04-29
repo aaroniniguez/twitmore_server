@@ -4,7 +4,7 @@ class Database {
 		this.connection = mysql.createConnection({
 			host: "localhost",
 			user: "root",
-			database: "stock"
+			database: "autoTweets"
 		});
 	}
 	query(sql, args){
