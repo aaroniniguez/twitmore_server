@@ -9,10 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "aaron": "0.0.1",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
     "fs": "0.0.1-security",
-    "mysql": "^2.16.0",
+    "mysql": "^2.17.1",
     "puppeteer": "^1.14.0",
     "puppeteer-core": "^1.14.0",
     "why-is-node-running": "^2.1.0"
