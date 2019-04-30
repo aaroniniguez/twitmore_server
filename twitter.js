@@ -37,18 +37,24 @@ module.exports = {
 		});
 		await page.waitFor(1000);
 		//check if user successfully logged in
-		await page.evaluate((validLoginPages) => {
-			if(validLoginPages.includes(window.location.href)){
-				return true;
-			}
-			else{
-				throw new Error("Invalid Login: "+window.location.href);
+		var loginError = await page.evaluate((validLoginPages) => {
+			if(!validLoginPages.includes(window.location.href)){
+				var errorObject = {
+					name: "InvalidCredentials",
+					message: "Invalid Credentials"
+				}
+				return JSON.stringify(errorObject);
 			}
 		}, validLoginPages);
+		if(loginError){
+			myError = JSON.parse(loginError);
+			throw myError;	
+		}
 		await browser.close();
 		return true;
 	},
 	postOnTwitter: async function postOnTwitter(username, password, data, uploadFile = false, randomFollow = false) {
+		const validLoginPages = ["https://twitter.com/home", "https://twitter.com/"];
 		var defaultDelay = {
 			delay: 30,
 		};
