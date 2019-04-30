@@ -4,8 +4,8 @@ module.exports = {
 		const validLoginPages = {"https://twitter.com/home":"new", "https://twitter.com/":"old"};
 		const puppeteer = require('puppeteer');
 		const twitter = "https://twitter.com/";
-		const browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
-  		//const browser = await puppeteer.launch({headless: false});
+		//const browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
+  		const browser = await puppeteer.launch({headless: false});
 		const page = await browser.newPage();
 		page.setDefaultTimeout(60000);
 		page.on('console', (log) => 
@@ -59,8 +59,8 @@ module.exports = {
 		};
 		const puppeteer = require('puppeteer');
 		const twitter = "https://twitter.com/";
-		//const browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
-  		const browser = await puppeteer.launch({headless: false});
+		const browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
+  		//const browser = await puppeteer.launch({headless: false});
 		const page = await browser.newPage();
 		//print out console logging in the page
 		page.on('console', (log) => 
