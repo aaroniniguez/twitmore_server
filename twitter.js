@@ -1,11 +1,13 @@
 module.exports = {
-	verifyLoginInfo: async function verifyLoginInfo(username, password)
+	async verifyLoginInfo(username, password)
 	{
+		const validLoginPages = ["https://twitter.com/home", "https://twitter.com/"];
 		const puppeteer = require('puppeteer');
 		const twitter = "https://twitter.com/";
 		const browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
   		//const browser = await puppeteer.launch({headless: false});
 		const page = await browser.newPage();
+		page.setDefaultTimeout(60000);
 		page.on('console', (log) => 
 		{
 			if(log._type == "warning")
@@ -34,28 +36,19 @@ module.exports = {
 			}
 		});
 		await page.waitFor(1000);
-		//check if invalid username and password...quicker check then below
-		var myError = await page.evaluate(() => {
-			if(document.evaluate("//span[contains(text(), 'The username and password you entered did not match our records. Please double-check and try again.')]", document).iterateNext()){
-				var myobj = {
-					name: "InvalidCredentials",
-					message: "Invalid Credentials"
-				}
-				return JSON.stringify(myobj);
-			}
-		});
-		if(myError){
-			myError = JSON.parse(myError);
-			throw myError;	
-		}
-		
 		//check if user successfully logged in
-		await page.waitForSelector("body.logged-in");
+		await page.evaluate((validLoginPages) => {
+			if(validLoginPages.includes(window.location.href)){
+				return true;
+			}
+			else{
+				throw new Error("Invalid Login: "+window.location.href);
+			}
+		}, validLoginPages);
 		await browser.close();
 		return true;
 	},
 	postOnTwitter: async function postOnTwitter(username, password, data, uploadFile = false, randomFollow = false) {
-		console.log("Starting post on twitter");
 		var defaultDelay = {
 			delay: 30,
 		};
@@ -81,7 +74,6 @@ module.exports = {
 			document.getElementsByClassName("js-nav EdgeButton EdgeButton--medium EdgeButton--secondary StaticLoggedOutHomePage-buttonLogin")[0].click();
 		});
 		
-		await page.type("input[name='session[username_or_email]']", username);
 		//sign in
 		await page.waitFor(3000);
 		await page.type("input[name='session[username_or_email]']", username, defaultDelay);
@@ -108,8 +100,16 @@ module.exports = {
 			throw myError;	
 		}
 		//check if user successfully logged in
-		await page.waitForSelector("body.logged-in", {timeout: 10000});
-		//random follow
+		//cant use this anymore since twitter changed their ui...now just assume logged in ok
+		var twitterVersion = "";
+		try{
+			await page.waitForSelector("body.logged-in", {timeout: 10000});
+			twitterVersion = "old";
+		}catch(err){
+			//do check for new twitter version here, else throw error could not login...!
+			twitterVersion = "new";
+		}
+		console.log(twitterVersion);
 		if(randomFollow)
 		{
 			const followPage = "https://twitter.com/"+username+"/followers";
@@ -136,21 +136,30 @@ module.exports = {
 			await page.waitFor(3000);
 			await page.goto(twitter, { waitUntil: 'networkidle2' });
 		}
-		await page.type("div[name=tweet]", data, defaultDelay);
+		if(twitterVersion == "old"){
+			await page.type("div[name=tweet]", data, defaultDelay);
+		}
+		else{
+			await page.keyboard.press('KeyN');
+			await page.waitFor(2000);
+			await page.keyboard.type(data, defaultDelay);
+		}
 		if(uploadFile){
 			const input = await page.$('input[type="file"]');
 			await input.uploadFile(uploadFile);
+			await page.waitFor(10000);
 		}
+		await page.keyboard.down('MetaLeft');
+		await page.keyboard.press('Enter');
+		await page.keyboard.up('MetaLeft');
+
 		await page.waitFor(2000);
-		console.log("right before tweeting");
-		await page.evaluate(() => {
-			var submitButton = document.querySelectorAll(".tweet-action.EdgeButton.EdgeButton--primary.js-tweet-btn");
-			if(submitButton){
-				submitButton[0].click();
-			}
-		});
-		console.log("waiting for proof of tweet posted: "+data);
-		await page.waitForSelector("button.new-tweets-bar");
+		if(twitterVersion == "old"){
+			await page.waitForSelector("button.new-tweets-bar");
+		} else {
+			await page.waitFor(9000);
+			//TODO: do check for new version else tweet was not sent, most likely duplicated
+		}
 		await browser.close();
 		return;
 	},
