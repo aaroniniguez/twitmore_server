@@ -1,6 +1,6 @@
 const log = require("why-is-node-running")
 const mysql = require("mysql");
-const twitter = require("twitter");
+const twitter = require("./twitter");
 var con = mysql.createConnection({
 	host: "localhost",
 	user: "root",
@@ -23,9 +23,7 @@ con.query("select * from tweets", function(err, result){
 			var difference = currentTime - element.start_time;
 			var daysDif = Math.floor(difference/1000/60/60/24);
 			var hoursDif = Math.floor(difference/1000/60/60);
-			//if(daysDif && daysDif % element.days === 0 && hoursDif && hoursDif % element.hours === 0 && currentTime.getMinutes() === element.minutes){
-			if(true)
-			{
+			if(daysDif && daysDif % element.days === 0 && hoursDif && hoursDif % element.hours === 0 && currentTime.getMinutes() === element.minutes){
 				await twitter.postOnTwitter(element.username, element.password, element.tweet, uploadFile = false, randomFollow = false).catch(function(error){
 					if(error) console.log(error);
 				});
