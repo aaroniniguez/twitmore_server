@@ -7,8 +7,12 @@ var con = mysql.createConnection({
 	database: "autoTweets"
 });
 con.connect(function(err){
-	if(err) throw err;	
-	console.log("connected to db");
+	if(err){
+		console.log(err);
+	}
+	else{
+		console.log("connected to db");
+	}
 });
 //get all tweet info
 var currentTime = new Date();
