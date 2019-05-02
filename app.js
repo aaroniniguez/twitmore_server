@@ -39,8 +39,9 @@ const asyncHandler = fn =>
 //Define app
 let app = express();
 app.use(function (req, res, next) {
-  console.log(req.url);
-  next();
+	res.type("json");
+	console.log(req.url);
+	next();
 });
 app.use(bodyParser.urlencoded({
 	 extended: true 
@@ -49,7 +50,6 @@ app.use(bodyParser.json());
 
 //Request Endpoint
 app.get('/test.php', asyncHandler(async function(req, res) {
-	res.type('json');
 	//Get Zone id
 	res.send(`{"live":"success"}`);
 	res.end();
@@ -90,9 +90,55 @@ function getCronMessage(days, hours, minutes) {
 	console.log(message);
 	return message;
 }
+//db query to get a users scheduled tweets
+async function getTweets(username) {
+	var query = `select * from tweets where username = "${username}"`;
+	console.log(query);
+	return database.query(query);
+}
+async function deleteTweet(id) {
+	var query = `delete from tweets where id = ${id}`;
+	console.log(query);
+	return database.query(query);
+}
+//convert each scheduled tweet to its json equivalent
+function convertTweetToJson(rowObject){
+	var response = "[";
+	rowObject.forEach(element => {
+		response += `{"hours":"${element.hours}", "days":"${element.days}", "minutes":"${element.minutes}", "tweets":"${element.tweet}"},`;
+	});
+	response = response.replace(/.$/, "");
+	response += "]";
+	return response;
+}
+app.post("/deleteTweet.php", asyncHandler(async function(req, res) {
+	console.log(req.body);
+	var id = req.body.id;
+	if(typeof id === "undefined"){
+		res.send(`{"type":"error","message": "Invalid Request"}`);
+		res.end();
+		return;
+	}
+	var usersTweets = await deleteTweet(id);
+	res.send(`{"type":"success","message": "Deleted Tweet!"}`);
+	res.end();
+}));
+app.post("/getTweets.php", asyncHandler(async function(req, res) {
+	console.log(req.body);
+	var username = req.body.username;
+	if(typeof username === "undefined"){
+		res.send(`{"type":"error","message": "Invalid Request"}`);
+		res.end();
+		return;
+	}
+	var usersTweets = await getTweets(username);
+	var allTweets = convertTweetToJson(usersTweets);
+	//write json response for each row in response..
+	console.log(allTweets);
+	res.send(`{"requests":${allTweets}}`);
+	res.end();
+}));
 app.post('/tweet.php', asyncHandler(async function(req, res) {
-	res.type('json');
-	//TODO always console log post data
 	console.log(req.body);
 	var password = req.body.password;
 	var username = req.body.username;
@@ -106,25 +152,27 @@ app.post('/tweet.php', asyncHandler(async function(req, res) {
 	validateString(days, "Please set a days value!");
 	validateString(hours, "Please set an hours value!");
 	validateString(minutes, "Please set a minutes value!");
-	tweet = tweet.replace(/'/g,"\\'");
-	tweet = tweet.replace(/%/g, "\\%");
-	tweet = tweet.replace(/\n/g, "\\n");
+	//dont need this anymore(now that we dont use cron):
+	//tweet = tweet.replace(/'/g,"\\'");
+	//tweet = tweet.replace(/%/g, "\\%");
+	//tweet = tweet.replace(/\n/g, "\\n");
 	//verify the users data
 	await twitter.verifyLoginInfo(username, password).catch(function(error){
 	if(error.name == "TimeoutError"){
-		console.log(error);
 		throw {name: "InvalidCredentials", message: "Invalid Credentials!"};
 	}
-	else
+	else{
+		console.log(error.message);
 		throw error;	
+	}
 	});
-	database.query(`insert into tweets (username, password, tweet, days, hours, minutes) values("${username}", "${password}", "${tweet}", ${days}, ${hours}, ${minutes})`).then(() => {
-			var message = getCronMessage(days, hours, minutes);
-			res.send(`{
+	database.query(`insert into tweets (username, password, tweet, days, hours, minutes) values("${username}", "${password}", "${tweet}", ${days}, ${hours}, ${minutes})`).then(()=>{
+		var message = getCronMessage(days, hours, minutes);
+		res.send(`{
 			"type":"success",
 			"message": "${message}"
-			}`);
-			res.end();
+		}`);
+		res.end();
 	}).catch( err => {
 		console.log(err);	
 		res.send(`{
@@ -132,9 +180,6 @@ app.post('/tweet.php', asyncHandler(async function(req, res) {
 			"message": "Database Error!"
 		}`);
 		res.end();
-	}).finally(() => {
-		console.log("running finally");
-		database.close();
 	});
 }));
 
