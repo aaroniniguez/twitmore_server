@@ -180,6 +180,8 @@ app.post('/tweet.php', asyncHandler(async function(req, res) {
 			"message": "Database Error!"
 		}`);
 		res.end();
+	}).finally(()=>{
+		database.close();
 	});
 }));
 
