@@ -94,12 +94,12 @@ function getCronMessage(days, hours, minutes) {
 async function getTweets(username) {
 	var query = `select * from tweets where username = "${username}"`;
 	console.log(query);
-	return database.query(query);
+	return database.query(query).finally(()=>{database.close();});
 }
 async function deleteTweet(id) {
 	var query = `delete from tweets where id = ${id}`;
 	console.log(query);
-	return database.query(query);
+	return database.query(query).finally(()=>{database.close();});
 }
 //convert each scheduled tweet to its json equivalent
 function convertTweetToJson(rowObject){
