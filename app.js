@@ -38,15 +38,16 @@ const asyncHandler = fn =>
 	
 //Define app
 let app = express();
-app.use(function (req, res, next) {
-	res.type("json");
-	console.log(req.url);
-	next();
-});
 app.use(bodyParser.urlencoded({
 	 extended: true 
 }));
 app.use(bodyParser.json());
+app.use(function (req, res, next) {
+	res.type("json");
+	console.log(req.url);
+	console.log(req.body);
+	next();
+});
 
 //Request Endpoint
 app.get('/test.php', asyncHandler(async function(req, res) {
@@ -93,12 +94,10 @@ function getCronMessage(days, hours, minutes) {
 //db query to get a users scheduled tweets
 async function getTweets(username) {
 	var query = `select * from tweets where username = "${username}"`;
-	console.log(query);
 	return database.query(query).finally(()=>{database.close();});
 }
 async function deleteTweet(id) {
 	var query = `delete from tweets where id = ${id}`;
-	console.log(query);
 	return database.query(query).finally(()=>{database.close();});
 }
 //convert each scheduled tweet to its json equivalent
@@ -117,7 +116,6 @@ function convertTweetToJson(rowObject){
 	return response;
 }
 app.post("/deleteTweet.php", asyncHandler(async function(req, res) {
-	console.log(req.body);
 	var id = req.body.id;
 	if(typeof id === "undefined"){
 		res.send(`{"type":"error","message": "Invalid Request"}`);
@@ -129,7 +127,6 @@ app.post("/deleteTweet.php", asyncHandler(async function(req, res) {
 	res.end();
 }));
 app.post("/getTweets.php", asyncHandler(async function(req, res) {
-	console.log(req.body);
 	var username = req.body.username;
 	if(typeof username === "undefined"){
 		res.send(`{"type":"error","message": "Invalid Request"}`);
@@ -144,7 +141,6 @@ app.post("/getTweets.php", asyncHandler(async function(req, res) {
 	res.end();
 }));
 app.post('/tweet.php', asyncHandler(async function(req, res) {
-	console.log(req.body);
 	var password = req.body.password;
 	var username = req.body.username;
 	var tweet = req.body.tweet;
