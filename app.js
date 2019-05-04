@@ -105,6 +105,11 @@ async function deleteTweet(id) {
 function convertTweetToJson(rowObject){
 	var response = "[";
 	rowObject.forEach(element => {
+		element.tweet = element.tweet.replace(/\n/g,"\\n");
+		element.tweet = element.tweet.replace(/\r/g,"\\r");
+		element.tweet = element.tweet.replace(/\t/g,"\\t");
+		//element.tweet = element.tweet.replace("\n", "\\n");
+		console.log(element.tweet);
 		response += `{"hours":"${element.hours}", "days":"${element.days}", "minutes":"${element.minutes}", "tweet":"${element.tweet}"},`;
 	});
 	response = response.replace(/.$/, "");
