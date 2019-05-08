@@ -96,6 +96,17 @@ async function getTweets(username) {
 	var query = `select * from tweets where username = "${username}"`;
 	return database.query(query).finally(()=>{database.close();});
 }
+async function validateUsername(username, password){
+	var query = `select * from tweets where username = "${username}"`;	
+	var result = await database.query(query).finally(()=>{database.close();});
+	var validUsername = true;
+	result.forEach((element)=>{
+		if(element.password != password)
+			validUsername = false;
+	});
+	console.log("is valid value: "+validUsername);
+	return validUsername;
+}
 async function deleteTweet(id) {
 	var query = `delete from tweets where id = ${id}`;
 	return database.query(query).finally(()=>{database.close();});
@@ -108,14 +119,14 @@ function convertTweetToJson(rowObject){
 		element.tweet = element.tweet.replace(/\r/g,"\\r");
 		element.tweet = element.tweet.replace(/\t/g,"\\t");
 		//element.tweet = element.tweet.replace("\n", "\\n");
-		console.log(element.tweet);
-		response += `{"hours":"${element.hours}", "days":"${element.days}", "minutes":"${element.minutes}", "tweet":"${element.tweet}"},`;
+		response += `{"id":"${element.id}","hours":"${element.hours}", "days":"${element.days}", "minutes":"${element.minutes}", "tweet":"${element.tweet}"},`;
 	});
-	response = response.replace(/.$/, "");
+	if(response != "[")
+		response = response.replace(/.$/, "");
 	response += "]";
 	return response;
 }
-app.post("/deleteTweet.php", asyncHandler(async function(req, res) {
+app.post(["/deleteTweet.php", "/api/v1/deleteTweet.php"], asyncHandler(async function(req, res) {
 	var id = req.body.id;
 	if(typeof id === "undefined"){
 		res.send(`{"type":"error","message": "Invalid Request"}`);
@@ -136,11 +147,30 @@ app.post("/getTweets.php", asyncHandler(async function(req, res) {
 	var usersTweets = await getTweets(username);
 	var allTweets = convertTweetToJson(usersTweets);
 	//write json response for each row in response..
-	console.log(allTweets);
 	res.send(`{"requests":${allTweets}}`);
 	res.end();
 }));
-app.post('/tweet.php', asyncHandler(async function(req, res) {
+app.post("/api/v1/getTweets.php", asyncHandler(async function(req, res) {
+	var username = req.body.username;
+	var password = req.body.password;
+	if(typeof username === "undefined" || typeof password === "undefined"){
+		res.send(`{"type":"error","message": "Invalid Request"}`);
+		res.end();
+		return;
+	}
+	var validUsername = await validateUsername(username, password);
+	if(!validUsername){
+		res.send(`{"type":"error","message": "Invalid Username and Password Combination."}`);
+		res.end();
+		return;
+	}
+	var usersTweets = await getTweets(username);
+	var allTweets = convertTweetToJson(usersTweets);
+	//write json response for each row in response..
+	res.send(`{"requests":${allTweets}}`);
+	res.end();
+}));
+app.post(['/tweet.php', '/api/v1/tweet.php'], asyncHandler(async function(req, res) {
 	var password = req.body.password;
 	var username = req.body.username;
 	var tweet = req.body.tweet;
