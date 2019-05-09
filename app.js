@@ -207,10 +207,7 @@ app.post(['/tweet.php', '/api/v1/tweet.php'], asyncHandler(async function(req, r
 		res.end();
 	}).catch( err => {
 		console.log(err);
-		res.send(`{
-			"type":"Error",
-			"message": "Database Error!"
-		}`);
+		res.send(`{"type":"Error","message": "Database Error!"}`);
 		res.end();
 	}).finally(()=>{
 		database.close();
