@@ -109,7 +109,6 @@ async function validateUsername(username, password){
 		if(element.password != password)
 			validUsername = false;
 	});
-	console.log("is valid value: "+validUsername);
 	return validUsername;
 }
 async function deleteTweet(id) {
@@ -204,10 +203,7 @@ app.post(['/tweet.php', '/api/v1/tweet.php'], asyncHandler(async function(req, r
 	});
 	database.query(`insert into tweets (username, password, tweet, days, hours, minutes) values("${username}", "${password}", "${tweet}", ${days}, ${hours}, ${minutes})`).then(()=>{
 		var message = getCronMessage(days, hours, minutes);
-		res.send(`{
-			"type":"success",
-			"message": "${message}"
-		}`);
+		res.send(`{"type":"success","message": "${message}"}`);
 		res.end();
 	}).catch( err => {
 		console.log(err);
