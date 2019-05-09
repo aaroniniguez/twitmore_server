@@ -8,11 +8,13 @@ const twitter = require("./twitter");
 var util = require('util');
 var log_file = fs.createWriteStream(__dirname + '/debug.log', {flags : 'w'});
 var log_stdout = process.stdout;
-console.log = function(d){
+console.log = function(...args){
 		var myTime = new Date();
 		myTime = myTime.toString().split("GMT")[0];
-		log_file.write("====" + myTime + "====\n");
-	   log_file.write(util.format(d) + '\n');
+		log_file.write("\n====" + myTime + "====\n");
+		args.forEach(function(element){
+		   log_file.write(util.format(element) + '\n');
+		});
 	   //log_stdout.write(util.format(d) + '\n');
 };
 var bodyParser = require('body-parser');
@@ -23,10 +25,7 @@ const asyncHandler = fn =>
         Promise.resolve(fn(req, res, next)).catch(function(error){   
 			console.log(error);
 			if(error.name == "InvalidInput" || error.name == "InvalidCredentials"){
-				res.send(`{
-				"type":"error",
-				"message":"${error.message}"
-				}`);
+				res.sendData(`{"type":"error","message":"${error.message}"}`);
 				res.end();
 				return;
 			}else{
@@ -38,21 +37,26 @@ const asyncHandler = fn =>
 	
 //Define app
 let app = express();
+app.response.sendData = function(data){
+	console.log("SEND "+ data);	
+	return this.send(data);
+};
+app.response.send.bind(app.response);
+
 app.use(bodyParser.urlencoded({
 	 extended: true 
 }));
 app.use(bodyParser.json());
 app.use(function (req, res, next) {
 	res.type("json");
-	console.log(req.url);
-	console.log(req.body);
+	console.log(req.method +" "+ req.url, req.body);
 	next();
 });
 
 //Request Endpoint
 app.get('/test.php', asyncHandler(async function(req, res) {
 	//Get Zone id
-	res.send(`{"live":"success"}`);
+	res.sendData(`{"live":"success"}`);
 	res.end();
 	return;
 }));
@@ -129,45 +133,45 @@ function convertTweetToJson(rowObject){
 app.post(["/deleteTweet.php", "/api/v1/deleteTweet.php"], asyncHandler(async function(req, res) {
 	var id = req.body.id;
 	if(typeof id === "undefined"){
-		res.send(`{"type":"error","message": "Invalid Request"}`);
+		res.sendData(`{"type":"error","message": "Invalid Request"}`);
 		res.end();
 		return;
 	}
 	var usersTweets = await deleteTweet(id);
-	res.send(`{"type":"success","message": "Deleted Tweet!"}`);
+	res.sendData(`{"type":"success","message": "Deleted Tweet!"}`);
 	res.end();
 }));
 app.post("/getTweets.php", asyncHandler(async function(req, res) {
 	var username = req.body.username;
 	if(typeof username === "undefined"){
-		res.send(`{"type":"error","message": "Invalid Request"}`);
+		res.sendData(`{"type":"error","message": "Invalid Request"}`);
 		res.end();
 		return;
 	}
 	var usersTweets = await getTweets(username);
 	var allTweets = convertTweetToJson(usersTweets);
 	//write json response for each row in response..
-	res.send(`{"requests":${allTweets}}`);
+	res.sendData(`{"requests":${allTweets}}`);
 	res.end();
 }));
 app.post("/api/v1/getTweets.php", asyncHandler(async function(req, res) {
 	var username = req.body.username;
 	var password = req.body.password;
 	if(typeof username === "undefined" || typeof password === "undefined"){
-		res.send(`{"type":"error","message": "Invalid Request"}`);
+		res.sendData(`{"type":"error","message": "Invalid Request"}`);
 		res.end();
 		return;
 	}
 	var validUsername = await validateUsername(username, password);
 	if(!validUsername){
-		res.send(`{"type":"error","message": "Invalid Username and Password Combination."}`);
+		res.sendData(`{"type":"error","message": "Invalid Username and Password Combination."}`);
 		res.end();
 		return;
 	}
 	var usersTweets = await getTweets(username);
 	var allTweets = convertTweetToJson(usersTweets);
 	//write json response for each row in response..
-	res.send(`{"requests":${allTweets}}`);
+	res.sendData(`{"requests":${allTweets}}`);
 	res.end();
 }));
 app.post(['/tweet.php', '/api/v1/tweet.php'], asyncHandler(async function(req, res) {
@@ -199,14 +203,14 @@ app.post(['/tweet.php', '/api/v1/tweet.php'], asyncHandler(async function(req, r
 	});
 	database.query(`insert into tweets (username, password, tweet, days, hours, minutes) values("${username}", "${password}", "${tweet}", ${days}, ${hours}, ${minutes})`).then(()=>{
 		var message = getCronMessage(days, hours, minutes);
-		res.send(`{
+		res.sendData(`{
 			"type":"success",
 			"message": "${message}"
 		}`);
 		res.end();
 	}).catch( err => {
-		console.log(err);	
-		res.send(`{
+		console.log(err);
+		res.sendData(`{
 			"type":"Error",
 			"message": "Database Error!"
 		}`);
