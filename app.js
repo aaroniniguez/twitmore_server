@@ -21,11 +21,11 @@ var bodyParser = require('body-parser');
 
 //catches all errors, use this wrapper on all app.get callback func
 const asyncHandler = fn =>  
-    (req, res, next) =>  {   
+    (req, res, next) =>  {
         Promise.resolve(fn(req, res, next)).catch(function(error){   
 			console.log(error);
 			if(error.name == "InvalidInput" || error.name == "InvalidCredentials"){
-				res.sendData(`{"type":"error","message":"${error.message}"}`);
+				res.send(`{"type":"error","message":"${error.message}"}`);
 				res.end();
 				return;
 			}else{
@@ -37,9 +37,10 @@ const asyncHandler = fn =>
 	
 //Define app
 let app = express();
-app.response.sendData = function(data){
+app.response.savedSend = app.response.send;
+app.response.send = function(data){
 	console.log("SEND "+ data);	
-	return this.send(data);
+	return this.savedSend(data);
 };
 app.response.send.bind(app.response);
 
@@ -56,7 +57,7 @@ app.use(function (req, res, next) {
 //Request Endpoint
 app.get('/test.php', asyncHandler(async function(req, res) {
 	//Get Zone id
-	res.sendData(`{"live":"success"}`);
+	res.send(`{"live":"success"}`);
 	res.end();
 	return;
 }));
@@ -133,45 +134,45 @@ function convertTweetToJson(rowObject){
 app.post(["/deleteTweet.php", "/api/v1/deleteTweet.php"], asyncHandler(async function(req, res) {
 	var id = req.body.id;
 	if(typeof id === "undefined"){
-		res.sendData(`{"type":"error","message": "Invalid Request"}`);
+		res.send(`{"type":"error","message": "Invalid Request"}`);
 		res.end();
 		return;
 	}
 	var usersTweets = await deleteTweet(id);
-	res.sendData(`{"type":"success","message": "Deleted Tweet!"}`);
+	res.send(`{"type":"success","message": "Deleted Tweet!"}`);
 	res.end();
 }));
 app.post("/getTweets.php", asyncHandler(async function(req, res) {
 	var username = req.body.username;
 	if(typeof username === "undefined"){
-		res.sendData(`{"type":"error","message": "Invalid Request"}`);
+		res.send(`{"type":"error","message": "Invalid Request"}`);
 		res.end();
 		return;
 	}
 	var usersTweets = await getTweets(username);
 	var allTweets = convertTweetToJson(usersTweets);
 	//write json response for each row in response..
-	res.sendData(`{"requests":${allTweets}}`);
+	res.send(`{"requests":${allTweets}}`);
 	res.end();
 }));
 app.post("/api/v1/getTweets.php", asyncHandler(async function(req, res) {
 	var username = req.body.username;
 	var password = req.body.password;
 	if(typeof username === "undefined" || typeof password === "undefined"){
-		res.sendData(`{"type":"error","message": "Invalid Request"}`);
+		res.send(`{"type":"error","message": "Invalid Request"}`);
 		res.end();
 		return;
 	}
 	var validUsername = await validateUsername(username, password);
 	if(!validUsername){
-		res.sendData(`{"type":"error","message": "Invalid Username and Password Combination."}`);
+		res.send(`{"type":"error","message": "Invalid Username and Password Combination."}`);
 		res.end();
 		return;
 	}
 	var usersTweets = await getTweets(username);
 	var allTweets = convertTweetToJson(usersTweets);
 	//write json response for each row in response..
-	res.sendData(`{"requests":${allTweets}}`);
+	res.send(`{"requests":${allTweets}}`);
 	res.end();
 }));
 app.post(['/tweet.php', '/api/v1/tweet.php'], asyncHandler(async function(req, res) {
@@ -203,14 +204,14 @@ app.post(['/tweet.php', '/api/v1/tweet.php'], asyncHandler(async function(req, r
 	});
 	database.query(`insert into tweets (username, password, tweet, days, hours, minutes) values("${username}", "${password}", "${tweet}", ${days}, ${hours}, ${minutes})`).then(()=>{
 		var message = getCronMessage(days, hours, minutes);
-		res.sendData(`{
+		res.send(`{
 			"type":"success",
 			"message": "${message}"
 		}`);
 		res.end();
 	}).catch( err => {
 		console.log(err);
-		res.sendData(`{
+		res.send(`{
 			"type":"Error",
 			"message": "Database Error!"
 		}`);
