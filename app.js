@@ -8,25 +8,24 @@ const twitter = require("./twitter");
 var util = require('util');
 var log_file = fs.createWriteStream(__dirname + '/debug.log', {flags : 'w'});
 var log_stdout = process.stdout;
-console.log = function(d){
+console.log = function(...args){
 		var myTime = new Date();
 		myTime = myTime.toString().split("GMT")[0];
-		log_file.write("====" + myTime + "====\n");
-	   log_file.write(util.format(d) + '\n');
+		log_file.write("\n====" + myTime + "====\n");
+		args.forEach(function(element){
+		   log_file.write(util.format(element) + '\n');
+		});
 	   //log_stdout.write(util.format(d) + '\n');
 };
 var bodyParser = require('body-parser');
 
 //catches all errors, use this wrapper on all app.get callback func
 const asyncHandler = fn =>  
-    (req, res, next) =>  {   
+    (req, res, next) =>  {
         Promise.resolve(fn(req, res, next)).catch(function(error){   
 			console.log(error);
 			if(error.name == "InvalidInput" || error.name == "InvalidCredentials"){
-				res.send(`{
-				"type":"error",
-				"message":"${error.message}"
-				}`);
+				res.send(`{"type":"error","message":"${error.message}"}`);
 				res.end();
 				return;
 			}else{
@@ -38,14 +37,20 @@ const asyncHandler = fn =>
 	
 //Define app
 let app = express();
+app.response.savedSend = app.response.send;
+app.response.send = function(data){
+	console.log("SEND "+ data);	
+	return this.savedSend(data);
+};
+app.response.send.bind(app.response);
+
 app.use(bodyParser.urlencoded({
 	 extended: true 
 }));
 app.use(bodyParser.json());
 app.use(function (req, res, next) {
 	res.type("json");
-	console.log(req.url);
-	console.log(req.body);
+	console.log(req.method +" "+ req.url, req.body);
 	next();
 });
 
@@ -104,7 +109,6 @@ async function validateUsername(username, password){
 		if(element.password != password)
 			validUsername = false;
 	});
-	console.log("is valid value: "+validUsername);
 	return validUsername;
 }
 async function deleteTweet(id) {
@@ -199,17 +203,11 @@ app.post(['/tweet.php', '/api/v1/tweet.php'], asyncHandler(async function(req, r
 	});
 	database.query(`insert into tweets (username, password, tweet, days, hours, minutes) values("${username}", "${password}", "${tweet}", ${days}, ${hours}, ${minutes})`).then(()=>{
 		var message = getCronMessage(days, hours, minutes);
-		res.send(`{
-			"type":"success",
-			"message": "${message}"
-		}`);
+		res.send(`{"type":"success","message": "${message}"}`);
 		res.end();
 	}).catch( err => {
-		console.log(err);	
-		res.send(`{
-			"type":"Error",
-			"message": "Database Error!"
-		}`);
+		console.log(err);
+		res.send(`{"type":"Error","message": "Database Error!"}`);
 		res.end();
 	}).finally(()=>{
 		database.close();
