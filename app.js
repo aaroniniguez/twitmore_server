@@ -7,7 +7,6 @@ const database = require("./Database");
 const twitter = require("./twitter");
 var util = require('util');
 var log_file = fs.createWriteStream(__dirname + '/debug.log', {flags : 'w'});
-var log_stdout = process.stdout;
 console.log = function(...args){
 		var myTime = new Date();
 		myTime = myTime.toString().split("GMT")[0];
@@ -15,7 +14,6 @@ console.log = function(...args){
 		args.forEach(function(element){
 		   log_file.write(util.format(element) + '\n');
 		});
-	   //log_stdout.write(util.format(d) + '\n');
 };
 var bodyParser = require('body-parser');
 
@@ -42,7 +40,6 @@ app.response.send = function(data){
 	console.log("SEND "+ data);	
 	return this.savedSend(data);
 };
-app.response.send.bind(app.response);
 
 app.use(bodyParser.urlencoded({
 	 extended: true 
@@ -50,7 +47,10 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json());
 app.use(function (req, res, next) {
 	res.type("json");
-	console.log(req.method +" "+ req.url, req.body);
+	if(isEmptyObject(req.body))
+		console.log(req.method +" "+ req.url);
+	else
+		console.log(req.method +" "+ req.url, req.body);
 	next();
 });
 
@@ -114,6 +114,9 @@ async function validateUsername(username, password){
 async function deleteTweet(id) {
 	var query = `delete from tweets where id = ${id}`;
 	return database.query(query).finally(()=>{database.close();});
+}
+function isEmptyObject(obj) {
+	  return !Object.keys(obj).length;
 }
 //convert each scheduled tweet to its json equivalent
 function convertTweetToJson(rowObject){
