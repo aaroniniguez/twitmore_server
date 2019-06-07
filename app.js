@@ -8,12 +8,12 @@ const twitter = require("./twitter");
 var util = require('util');
 var log_file = fs.createWriteStream(__dirname + '/nohup.out', {flags : 'a'});
 console.log = function(...args){
-		var myTime = new Date();
-		myTime = myTime.toString().split("GMT")[0];
-		log_file.write("\n====" + myTime + "====\n");
-		args.forEach(function(element){
-		   log_file.write(util.format(element) + '\n');
-		});
+	var myTime = new Date();
+	myTime = myTime.toString().split("GMT")[0];
+	log_file.write("\n====" + myTime + "====\n");
+	args.forEach(function(element){
+	   log_file.write(util.format(element) + '\n');
+	});
 };
 var bodyParser = require('body-parser');
 
@@ -37,7 +37,7 @@ const asyncHandler = fn =>
 let app = express();
 app.response.savedSend = app.response.send;
 app.response.send = function(data){
-	console.log("SEND "+ data);	
+	console.log("RESPONSE "+ data);	
 	return this.savedSend(data);
 };
 
